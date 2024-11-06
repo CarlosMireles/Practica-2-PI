@@ -1,3 +1,4 @@
+# Práctica Lab2: Interfaces Paralelos
 Esta práctica involucra la implementación de un programa para el manejo de pulsadores, un teclado matricial y un display de 7 segmentos en una placa de desarrollo, utilizando diferentes modos de visualización y un frecuencímetro. A continuación, se detallan los aspectos clave de la práctica:
 
 ### Descripción de la práctica

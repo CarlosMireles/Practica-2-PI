@@ -55,16 +55,18 @@ int contador = 000;
 int contador_max = 999;
 int incremento = 1;
 
-int modo_old = 4;
-int modo = 4;
+int modo_old = 1;
+int modo = 1;
 int digit = 0;
 
 String NumTec;				// String que almacena los numeros introducidos por teclado
 long deltaTime = 0L;
 
-double old_value = 0L;;
-double new_value = 0L;;
-double finalValue = 0L;;
+int TOP = 0;
+
+double old_value = 0L;
+double new_value = 0L;
+double finalValue = 0L;
 double frecDelay = 0L;
 int frecuencia = 0;
 
@@ -109,8 +111,8 @@ void setup() {
 		Serial.println("-----------------------------------------");
 		
 		// inicialización
-		//pinMode(5, 1); 							// la salida OC3A está en el pin 5 --> programar el pin 5 de salida!!
-		pinMode(2, 1); 							// la salida OC3B está en el pin 2 --> programar el pin 2 de salida!!
+		pinMode(5, 1); 							// la salida OC3A está en el pin 5 --> programar el pin 5 de salida!!
+		//pinMode(2, 1); 							// la salida OC3B está en el pin 2 --> programar el pin 2 de salida!!
 		//pinMode(3, 1); 							// la salida OC3C está en el pin 3 --> programar el pin 3 de salida!!
 
 		cli();
@@ -120,17 +122,18 @@ void setup() {
 		TCNT3 = 0;
 
 		// programar	
-		OCR3A = 39999; 							// TOP 				
+		OCR3A = 9999; 							// TOP 				
+		TOP = 9999;
 		//OCR3B = 0000; 									
 		//OCR3C = 0000;						
 		//ICR3= 0000;					
 
 															// Modo CTC (TOP = OCR3A)
 		TCCR3A = B01000000; 				// activada la salida OC3B
-		TCCR3B = B00001001; 				// N=1
+		TCCR3B = B00001010; 				// N=1
 	
 		// Habilitación de las interrupcionTIMER3_COMPB_vect 
-		TIMSK3  |= (1<< OCIE3A)  | (0<<OCIE3B)  | (0<<OCIE3C)   | (0<<TOIE3) | (0<<ICIE3); 
+		TIMSK3  |= (1<< OCIE3A)  | (0<<OCIE3B)  | (0<<OCIE3C)   | (0<<TOIE3) | (1<<ICIE3); 
 		sei();
 	}
 
@@ -141,22 +144,12 @@ void loop() {
 		bottonRight();
 		bottonLeft();
 		comprobarOpcionIntroducida();
-		calcularFrecuencia();
-		//frecuencia = 11192;
-		//frecuencia = 4321;
+		calcularFrecuencia(finalValue);
 }
 
 
-void calcularFrecuencia(){
-		if (new_value>old_value){
-				if(millis() - frecDelay >= 750){
-					finalValue=(new_value-old_value);
-					frecuencia=1/((finalValue * 0.5)/1000000);
-					frecDelay = millis();
-					Serial.println(frecuencia);
-					Serial.println("HOLA");
-				}
-		}
+void calcularFrecuencia(int finalValue){
+		frecuencia = 1 / ( float (finalValue) * 0.5 * pow(10, -6) );
 }
 
 
@@ -343,26 +336,26 @@ ISR(TIMER3_COMPA_vect){
 		else if (modo == 4){
 			switch(digit){
 				case 0:
-					PORTA = num[frecuencia % 10];
 					if (frecuencia > 9999){ PORTA = num[int(frecuencia/10) % 10];}
+					else { PORTA = num[frecuencia % 10];}
 					PORTL = D4;
 					digit++;
 					break;
 				case 1:
-					PORTA = num[int(frecuencia/10) % 10];
 					if (frecuencia > 9999){ PORTA = num[int(frecuencia/100) % 10];}
+					else { PORTA = num[int(frecuencia/10) % 10];}
 					PORTL = D3;
 					digit++;
 					break;
 				case 2:
-					PORTA = num[int(frecuencia/100) % 10];
 					if (frecuencia > 9999){ PORTA = num[int(frecuencia/1000) % 10]; PORTA |= 0x80;}
+					else { PORTA = num[int(frecuencia/100) % 10];}
 					PORTL = D2;
 					digit++;
 					break;
 				case 3:
-					PORTA = num[int(frecuencia/1000) % 10];
 					if (frecuencia > 9999){ PORTA = num[int(frecuencia/10000) % 10];}
+					else {PORTA = num[int(frecuencia/1000) % 10];}
 					PORTL = D1;
 					digit = 0;
 					break;
@@ -371,7 +364,10 @@ ISR(TIMER3_COMPA_vect){
 }
 
 ISR(TIMER3_CAPT_vect){
-
 	old_value=new_value;
 	new_value=ICR3;
+	finalValue = new_value - old_value;
+	if (finalValue < 0){
+		finalValue = (TOP - old_value) +new_value; 
+	}
 }
